@@ -188,12 +188,18 @@ public class EntryPublicationController {
 
         PublicationView view = new PublicationView();
         view.setPublication(publicationService.findPublicationById(publicationId));
-        view.addEntryPublicationList(eps);
 
-        // Only queries SOLR with the selected, sorted list of entry accessions
-        Set<String> entryAccessions = eps.stream()
+        // Sort the entry publication list
+        List<EntryPublication> entryPublicationList = eps.stream()
+                .sorted(Comparator.comparing(EntryPublication::getEntryAccession))
+                .collect(Collectors.toList());
+        view.addEntryPublicationList(entryPublicationList);
+
+        Set<String> entryAccessions = entryPublicationList.stream()
                 .map(EntryPublication::getEntryAccession)
                 .collect(Collectors.toSet());
+
+        // Only queries SOLR with the selected, sorted list of entry accessions
         qr.setEntryAccessionSet(entryAccessions);
 
         Query q = queryBuilderService.buildQueryForSearch(qr, Entity.Entry);
