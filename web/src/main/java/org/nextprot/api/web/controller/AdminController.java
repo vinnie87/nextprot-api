@@ -11,6 +11,7 @@ import org.nextprot.api.core.service.MasterIdentifierService;
 import org.nextprot.api.core.service.PublicationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
 @Controller
 //@PreAuthorize("hasRole('ROLE_ADMIN')")
 @Api(name = "Admin tasks", description = "Admin operations", group="Admin")
-//@ApiAuthBasic(roles={"ROLE_ADMIN"})
+@ApiAuthBasic(roles={"ROLE_ADMIN"})
 public class AdminController {
 
 	private static final Log LOGGER = LogFactory.getLog(AdminController.class);

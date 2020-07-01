@@ -337,7 +337,7 @@ abstract class StatementAnnotationBuilder implements Supplier<Annotation> {
             // For interaction mappings, add the interacting region from statment as a property
             if(AnnotationCategory.INTERACTION_MAPPING.equals(annotation.getAPICategory())) {
                 AnnotationProperty annotationProperty = new AnnotationProperty();
-                annotationProperty.setName("interacting-region");
+                annotationProperty.setName("interacting-sequence");
                 annotationProperty.setValue(firstStatement.getValue(new CustomStatementField("MAPPING_SEQUENCE")));
                 annotation.addProperty(annotationProperty);
 

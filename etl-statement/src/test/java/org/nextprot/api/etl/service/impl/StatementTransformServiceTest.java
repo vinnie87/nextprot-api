@@ -180,6 +180,23 @@ public class StatementTransformServiceTest {
 		}
 	}
 
+	@Test
+	public void shouldPropagateWithToleranceToIsoforms() throws IOException{
+		StatementsExtractorLocalMockImpl sle = new StatementsExtractorLocalMockImpl();
+		Collection<Statement> rawStatements = sle.getStatementsFromJsonFile(StatementSource.ENYO, null, "enyo-statements");
+
+		//Interaction mapping
+		Collection<Statement> mappedStatements = statementTransformerService.transformStatements(rawStatements, new ReportBuilder());
+		List<Statement> mappedStatementsWithMultipleIsoforms = mappedStatements.stream()
+				.filter(statement ->  "NX_O94983".equals(statement.getEntryAccession()))
+				.collect(Collectors.toList());
+
+		String regionalMappedStatementIsoformJson1 = mappedStatementsWithMultipleIsoforms.get(0).getValue(TARGET_ISOFORMS);
+		Assert.assertEquals(5, TargetIsoformSet.deSerializeFromJsonString(regionalMappedStatementIsoformJson1).size());
+		Assert.assertEquals("[{\"isoformAccession\":\"NX_O94983-1\",\"specificity\":\"SPECIFIC\",\"begin\":983,\"end\":1202},{\"isoformAccession\":\"NX_O94983-2\",\"specificity\":\"SPECIFIC\",\"begin\":983,\"end\":1195},{\"isoformAccession\":\"NX_O94983-3\",\"specificity\":\"SPECIFIC\",\"begin\":985,\"end\":1197},{\"isoformAccession\":\"NX_O94983-4\",\"specificity\":\"SPECIFIC\",\"begin\":982,\"end\":1201},{\"isoformAccession\":\"NX_O94983-5\",\"specificity\":\"SPECIFIC\",\"begin\":110,\"end\":329}]", regionalMappedStatementIsoformJson1);
+
+	}
+
 	static class AnnotationCategoryPredicate implements Predicate<Statement>{
 
 		private AnnotationCategory category = null;

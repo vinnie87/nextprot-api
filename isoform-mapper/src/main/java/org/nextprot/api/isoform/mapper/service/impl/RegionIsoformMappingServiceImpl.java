@@ -2,6 +2,7 @@ package org.nextprot.api.isoform.mapper.service.impl;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.nextprot.api.commons.app.ApplicationContextProvider;
 import org.nextprot.api.core.domain.Isoform;
 import org.nextprot.api.core.service.IsoformService;
@@ -13,6 +14,8 @@ import org.nextprot.api.isoform.mapper.domain.query.result.impl.RegionFeatureQue
 import org.nextprot.api.isoform.mapper.service.RegionIsoformMappingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.logging.Logger;
 
 
 /**
@@ -78,11 +81,10 @@ public class RegionIsoformMappingServiceImpl implements RegionIsoformMappingServ
 
         int regionStart = query.getRegionStart();
         int regionEnd = query.getRegionEnd();
-        int regionLength = regionEnd - regionStart + 1;
-        String region = isoform.getSequence().substring(regionStart - 1, regionEnd);
+        String regionFromQuery = query.getRegionSequence();
+        int regionLength = regionFromQuery.length();
 
         RegionFeatureQuerySuccessImpl result = new RegionFeatureQuerySuccessImpl(query, isoform);
-
         for (Isoform targetIsoform : isoformService.getOtherIsoforms(isoform.getIsoformAccession())) {
 
             // Propagate the first position
@@ -90,35 +92,20 @@ public class RegionIsoformMappingServiceImpl implements RegionIsoformMappingServ
             Integer targetIsoformRegionEnd = IsoformSequencePositionMapper.getProjectedPosition(isoform, regionEnd, targetIsoform);
 
             if(targetIsoformRegionStart == null || targetIsoformRegionEnd == null) {
-                LOGGER.info("Project start/end position does not exist");
+                LOGGER.info("Project start/end position does not exist on " + targetIsoform.getIsoformAccession());
                 continue;
             } else {
-                int projectedSequenceLegth = targetIsoformRegionEnd - targetIsoformRegionStart + 1;
-                // Check if the sub sequence exists consecutively on the other isoform
-                if(regionLength == projectedSequenceLegth) {
-                    String targetIsoformRegion = targetIsoform.getSequence().substring(targetIsoformRegionStart - 1, targetIsoformRegionEnd);
 
-                    // If the sub sequence is shorter or equal to 30, an exact match is required
-                    if(projectedSequenceLegth <= 30) {
-                        if(region.equals(targetIsoformRegion)) {
-                            result.addMappedFeature(targetIsoform, targetIsoformRegionStart, targetIsoformRegionEnd);
-                        } else {
-                            continue;
-                        }
-                    } else {
-                        // For sub sequences longer than 30 a mismatches are tolerated up to a level
-
-                        if(matchWithTolerance(region, targetIsoformRegion, 0.05)) {
-                            // Matching regions
-                            LOGGER.info("Matched isform regions");
-                            result.addMappedFeature(targetIsoform, targetIsoformRegionStart, targetIsoformRegionEnd);
-                        } else {
-                            continue;
-                        }
-                    }
-
+                String targetIsoformRegion = targetIsoform.getSequence().substring(targetIsoformRegionStart - 1, targetIsoformRegionEnd);
+                LevenshteinDistance editDistanceCalculator = new LevenshteinDistance();
+                int editDistance = editDistanceCalculator.apply(regionFromQuery, targetIsoformRegion);
+                LOGGER.info("Sequence1: " + regionFromQuery + ",Sequence2:" + targetIsoformRegion + ",Levenshtein Distance:" + editDistance);
+                float matchingScore = (float)(regionLength - editDistance)/regionLength;
+                if(matchingScore >= 0.96) {
+                    LOGGER.info("Match:true,Isoform:" + isoform.getIsoformAccession());
+                    result.addMappedFeature(targetIsoform, targetIsoformRegionStart, targetIsoformRegionEnd);
                 } else {
-                    LOGGER.info("Subsequence does not align with projected indices");
+                    LOGGER.info("Match:true,Isoform:" + isoform.getIsoformAccession());
                     continue;
                 }
             }
